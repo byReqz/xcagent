@@ -77,7 +77,7 @@ func setPassphrase(path, key string) {
 
 // connHandler handles the individual connections coming into the socket.
 func connHandler(l net.Listener, c net.Conn) {
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 	buf, err := ReadConn(c)
 	if err != nil {
 		_ = WriteConn(c, "ERROR: failed reading request") // best effort to try to inform the other side of the issue
@@ -92,36 +92,35 @@ func connHandler(l net.Listener, c net.Conn) {
 
 	switch args[0] {
 	case "KILLAGENT":
-		WriteConn(c, "OK")
-		c.Close()
-		l.Close()
+		_ = WriteConn(c, "OK")
+		_ = c.Close()
+		_ = l.Close()
 		os.Exit(0)
 	case "PING":
-		WriteConn(c, "PONG")
+		_ = WriteConn(c, "PONG")
 	case "COMMAND":
 		if len(args) < 2 {
-			WriteConn(c, "ERROR: no command given")
+			_ = WriteConn(c, "ERROR: no command given")
 		} else {
-			WriteConn(c, command(args[1:]...))
+			_ = WriteConn(c, command(args[1:]...))
 		}
 	case "SET-PASSPHRASE":
 		if len(args) < 3 {
 			_ = WriteConn(c, "ERROR: missing arguments")
 		} else {
 			setPassphrase(args[1], args[2])
-			WriteConn(c, "OK")
+			_ = WriteConn(c, "OK")
 		}
 	case "QUERY":
 		if len(args) < 2 {
-			WriteConn(c, "ERROR: missing argument")
+			_ = WriteConn(c, "ERROR: missing argument")
 		} else {
-			WriteConn(c, command("show", "-q", "-s", "--all", Path, args[1]))
+			_ = WriteConn(c, command("show", "-q", "-s", "--all", Path, args[1]))
 		}
 	default:
-		WriteConn(c, "ERROR: unknown command: "+args[0])
+		_ = WriteConn(c, "ERROR: unknown command: "+args[0])
 	}
-	c.Close()
-	return
+	_ = c.Close()
 }
 
 // Listener is the actual daemon listening on the socket.
@@ -130,7 +129,7 @@ func Listener() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 
 	fmt.Println(l)
 

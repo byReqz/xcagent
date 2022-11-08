@@ -28,7 +28,7 @@ flags:
 	fmt.Println(help)
 }
 
-// sendSocket sends the given query to the socket address thats set as XCAGENT_SOCK environment variable and returns the reply.
+// sendSocket sends the given query to the socket address that's set as XCAGENT_SOCK environment variable and returns the reply.
 func sendSocket(args ...string) {
 	addr := os.Getenv("XCAGENT_SOCK")
 	if addr == "" {
@@ -38,13 +38,13 @@ func sendSocket(args ...string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_, err = conn.Write([]byte(strings.Join(args, " ")))
 	if err != nil {
 		log.Fatal(err)
 	}
-	conn.Write([]byte{4})
+	_, _ = conn.Write([]byte{4})
 	reply, err := daemon.ReadConn(conn)
 	if err != nil {
 		log.Fatal(err)
